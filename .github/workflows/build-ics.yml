@@ -2,7 +2,7 @@ name: Build & Publish ICS
 
 on:
   schedule:
-    - cron: '0 15 * * 2' # каждые 6 часов
+    - cron: '*/5 * * * *' # каждые 6 часов
   workflow_dispatch: {} # возможность запустить вручную
 
 permissions:
