@@ -11,10 +11,16 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Guard — run only Tue 18:00 Helsinki
+        run: |
+          echo "Now (Helsinki): $(TZ=Europe/Helsinki date -Is)"
+          [ "$(TZ=Europe/Helsinki date +'%u %H')" = "2 18" ] || { echo "Skip (not Tue 18:00 Helsinki)"; exit 0; }
+
+      - name: Checkout (full history)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,34 +32,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Устанавливаем системные зависимости браузера через официальный action,
-      # иначе Playwright headless может не стартовать в CI
-      - name: Install Playwright browser dependencies
-        uses: microsoft/playwright-github-action@v1
-        with:
-          version: 1.47.0
-
-      - name: Install Chromium for Playwright (Python)
+      # ВАЖНО: без устаревшего action. Ставим браузер и системные deps через --with-deps
+      - name: Install Chromium and system deps for Playwright
         run: |
-          python -m playwright install chromium
+          sudo apt-get update
+          python -m playwright install --with-deps chromium
 
-      - name: Build events.ics
+      - name: Build events.ics (headless)
         env:
-          HEADFUL: '0' # строго headless в CI
+          HEADFUL: '0'
           RUDA_URL: 'https://rudagames.com/helsinki'
           ICS_PATH: 'events.ics'
           CLICK_LIMIT: '30'
           WAIT_AFTER_CLICK_MS: '900'
           NAV_TIMEOUT_MS: '90000'
-          DEBUG_HTML: '0' # выключим page.debug.html в CI
+          DEBUG_HTML: '0'
         run: |
           python rudagames_to_ics_playwright.py
           test -s events.ics || { echo "events.ics is empty!"; exit 1; }
 
-      - name: Commit updated events.ics
+      - name: Commit & push events.ics
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add events.ics
-          git diff --staged --quiet && echo "No changes to commit" || git commit -m "Update events.ics"
-          git push
+          git commit -m "Update events.ics" || echo "No changes to commit"
+          git pull --rebase origin "$(git rev-parse --abbrev-ref HEAD)" || true
+          git push origin HEAD
