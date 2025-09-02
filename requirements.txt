@@ -1,0 +1,4 @@
+beautifulsoup4==4.12.3
+requests==2.32.3
+ics==0.7.2
+playwright==1.47.0
