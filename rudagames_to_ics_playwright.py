@@ -295,9 +295,23 @@ def main():
         print(f"[info] найдено событий: {len(events)}")
 
     cal = build_ics(events)
+
+    # Сохраняем старые события из существующего файла
+    if os.path.exists(ICS_PATH):
+        try:
+            with open(ICS_PATH, "r", encoding="utf-8") as f:
+                old_cal = Calendar(f.read())
+            new_uids = {e.uid for e in cal.events}
+            for e in old_cal.events:
+                if e.uid not in new_uids:
+                    cal.events.add(e)
+            print(f"[info] сохранено старых событий: {len(old_cal.events) - len(new_uids & {e.uid for e in old_cal.events})}")
+        except Exception as ex:
+            print(f"[warn] не удалось прочитать существующий ICS: {ex}")
+
     with open(ICS_PATH, "w", encoding="utf-8") as f:
         f.writelines(cal)
-    print(f"[ok] Wrote {ICS_PATH} with {len(events)} events")
+    print(f"[ok] Wrote {ICS_PATH} with {len(cal.events)} events")
 
 if __name__ == "__main__":
     main()
