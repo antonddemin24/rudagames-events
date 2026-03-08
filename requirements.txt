@@ -1,5 +1,5 @@
 beautifulsoup4==4.12.3
 requests==2.32.3
 ics==0.7.2
-tatsu==4.4.0
+tatsu==5.12.1
 playwright==1.47.0
