@@ -3,7 +3,12 @@ name: Build & Publish ICS
 on:
   schedule:
     - cron: '0 15 * * 1' # каждые 6 часов
-  workflow_dispatch: {} # возможность запустить вручную
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Skip time guard'
+        type: boolean
+        default: false
 
 permissions:
   contents: write # нужно для коммита events.ics
@@ -15,7 +20,7 @@ jobs:
       - name: Guard — run only Tue 18:00 Helsinki
         run: |
           echo "Now (Helsinki): $(TZ=Europe/Helsinki date -Is)"
-          [ "$(TZ=Europe/Helsinki date +'%u %H')" = "2 18" ] || { echo "Skip (not Tue 18:00 Helsinki)"; exit 0; }
+          [ "${{ inputs.force }}" = "true" ] || [ "$(TZ=Europe/Helsinki date +'%u %H')" = "2 18" ] || { echo "Skip (not Tue 18:00 Helsinki)"; exit 0; }
 
       - name: Checkout (full history)
         uses: actions/checkout@v4
